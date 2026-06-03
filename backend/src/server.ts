@@ -6,7 +6,7 @@ import swaggerSpec from "./docs/swagger";
 
 import carRoutes from "./routes/carRoutes";
 import customerRoutes from "./routes/customerRoutes";
-// import bookingRoutes from "./routes/bookingRoutes";
+import bookingRoutes from "./routes/bookingRoutes";
 
 // Load environment variables before starting the server.
 dotenv.config();
@@ -32,7 +32,7 @@ app.get("/", (req, res) => {
 // API route groups.
 app.use("/api/cars", carRoutes);
 app.use("/api/customers", customerRoutes);
-// app.use("/api/bookings", bookingRoutes);
+app.use("/api/bookings", bookingRoutes);
 
 const PORT = process.env.PORT || 4000;
 
