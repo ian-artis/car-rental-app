@@ -1,6 +1,12 @@
 import { Request, Response } from "express";
 import db from "../config/db";
 
+/*
+  Get all cars from the database.
+
+  Cars are ordered by newest first so recently added inventory appears
+  at the top of admin or listing pages.
+*/
 export const getCars = async (req: Request, res: Response) => {
   try {
     const [rows] = await db.query("SELECT * FROM cars ORDER BY id DESC");
@@ -12,6 +18,11 @@ export const getCars = async (req: Request, res: Response) => {
   }
 };
 
+/*
+  Get one car by ID.
+
+  The ID comes from the route parameter: /api/cars/:id
+*/
 export const getCarById = async (req: Request, res: Response) => {
   try {
     const carId = Number(req.params.id);
@@ -31,17 +42,16 @@ export const getCarById = async (req: Request, res: Response) => {
   }
 };
 
+/*
+  Create a new car record.
+
+  Required fields are validated before running the SQL insert so the API
+  can return a clear client error instead of a database error.
+*/
 export const createCar = async (req: Request, res: Response) => {
   try {
-    const {
-      brand,
-      model,
-      year,
-      car_type,
-      daily_rate,
-      status,
-      image_url,
-    } = req.body;
+    const { brand, model, year, car_type, daily_rate, status, image_url } =
+      req.body;
 
     if (!brand || !model || !year || !car_type || !daily_rate) {
       return res.status(400).json({
@@ -49,6 +59,10 @@ export const createCar = async (req: Request, res: Response) => {
       });
     }
 
+    /*
+      Parameterized queries protect against SQL injection by separating
+      SQL syntax from user-provided values.
+    */
     const [result]: any = await db.query(
       `INSERT INTO cars 
       (brand, model, year, car_type, daily_rate, status, image_url)
@@ -74,19 +88,18 @@ export const createCar = async (req: Request, res: Response) => {
   }
 };
 
+/*
+  Update an existing car.
+
+  The affectedRows check confirms whether the requested car ID actually
+  exists before returning a success response.
+*/
 export const updateCar = async (req: Request, res: Response) => {
   try {
     const carId = Number(req.params.id);
 
-    const {
-      brand,
-      model,
-      year,
-      car_type,
-      daily_rate,
-      status,
-      image_url,
-    } = req.body;
+    const { brand, model, year, car_type, daily_rate, status, image_url } =
+      req.body;
 
     const [result]: any = await db.query(
       `UPDATE cars
@@ -98,16 +111,7 @@ export const updateCar = async (req: Request, res: Response) => {
            status = ?, 
            image_url = ?
        WHERE id = ?`,
-      [
-        brand,
-        model,
-        year,
-        car_type,
-        daily_rate,
-        status,
-        image_url,
-        carId,
-      ]
+      [brand, model, year, car_type, daily_rate, status, image_url, carId]
     );
 
     if (result.affectedRows === 0) {
@@ -121,6 +125,12 @@ export const updateCar = async (req: Request, res: Response) => {
   }
 };
 
+/*
+  Delete a car by ID.
+
+  In a larger production app, this could become a soft delete instead of
+  permanently removing the record.
+*/
 export const deleteCar = async (req: Request, res: Response) => {
   try {
     const carId = Number(req.params.id);
