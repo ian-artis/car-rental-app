@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { Car } from "../types/Car";
 import { getCarById } from "../services/carService";
+import BookingModal from "../components/BookingModal";
+
 
 function CarDetailsPage() {
   const { id } = useParams();
   const [car, setCar] = useState<Car | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   useEffect(() => {
     const loadCar = async () => {
@@ -63,9 +66,21 @@ function CarDetailsPage() {
             Status: <span className="badge bg-success">{car.status}</span>
           </p>
 
-          <button className="btn btn-primary">Book This Car</button>
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowBookingModal(true)}
+          >
+            Book This Car
+          </button>
         </div>
       </div>
+
+      <BookingModal
+        carId={car.id}
+        carName={`${car.brand} ${car.model}`}
+        show={showBookingModal}
+        onClose={() => setShowBookingModal(false)}
+      />
     </div>
   );
 }
