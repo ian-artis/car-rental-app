@@ -13,9 +13,14 @@ function Navbar() {
             Home
           </Link>
 
+          <Link className="nav-link" to="/admin/cars">
+            Admin Cars
+          </Link>
+
           <Link className="nav-link" to="/cars">
             Cars
           </Link>
+
         </div>
       </div>
     </nav>
