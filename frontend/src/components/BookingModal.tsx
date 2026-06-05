@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { createBooking } from "../services/bookingService";
-import { getCustomers } from "../services/customerService";
+import {
+  createCustomer,
+  getCustomers,
+  type CustomerFormData,
+} from "../services/customerService";
 import type { Customer } from "../types/Customer";
 
 type BookingModalProps = {
@@ -14,6 +18,16 @@ function BookingModal({ carId, carName, show, onClose }: BookingModalProps) {
   const [customerId, setCustomerId] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customersLoading, setCustomersLoading] = useState(false);
+
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+
+  const [newCustomer, setNewCustomer] = useState<CustomerFormData>({
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "",
+  });
+
   const [pickupDate, setPickupDate] = useState("");
   const [returnDate, setReturnDate] = useState("");
 
@@ -22,34 +36,8 @@ function BookingModal({ carId, carName, show, onClose }: BookingModalProps) {
   const [totalPrice, setTotalPrice] = useState<number | null>(null);
   const [rentalDays, setRentalDays] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+
   const today = new Date().toISOString().split("T")[0];
-
-  useEffect(() => {
-    const loadCustomers = async () => {
-        if (!show) return;
-
-        try {
-        setCustomersLoading(true);
-        const data = await getCustomers();
-        setCustomers(data);
-
-        if (data.length > 0) {
-            setCustomerId(String(data[0].id));
-        }
-        } catch (error) {
-        console.error("Failed to load customers:", error);
-        setErrorMessage("Failed to load customers.");
-        } finally {
-        setCustomersLoading(false);
-        }
-    };
-
-    loadCustomers();
-}, [show]);
-
-  if (!show) {
-    return null;
-  }
 
   const resetMessages = () => {
     setSuccessMessage("");
@@ -58,9 +46,85 @@ function BookingModal({ carId, carName, show, onClose }: BookingModalProps) {
     setRentalDays(null);
   };
 
+  const loadCustomers = async () => {
+    try {
+      setCustomersLoading(true);
+
+      const data = await getCustomers();
+      setCustomers(data);
+
+      if (data.length > 0 && !customerId) {
+        setCustomerId(String(data[0].id));
+      }
+    } catch (error) {
+      console.error("Failed to load customers:", error);
+      setErrorMessage("Failed to load customers.");
+    } finally {
+      setCustomersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (show) {
+      loadCustomers();
+    }
+  }, [show]);
+
+  if (!show) {
+    return null;
+  }
+
   const handleClose = () => {
     resetMessages();
+    setShowNewCustomerForm(false);
     onClose();
+  };
+
+  const handleNewCustomerChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const { name, value } = event.target;
+
+    setNewCustomer((prevCustomer) => ({
+      ...prevCustomer,
+      [name]: value,
+    }));
+  };
+
+  const handleCreateCustomer = async () => {
+    resetMessages();
+
+    if (!newCustomer.first_name || !newCustomer.last_name || !newCustomer.email) {
+      setErrorMessage("First name, last name, and email are required.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      const response = await createCustomer(newCustomer);
+
+      await loadCustomers();
+
+      setCustomerId(String(response.customerId));
+      setShowNewCustomerForm(false);
+
+      setNewCustomer({
+        first_name: "",
+        last_name: "",
+        email: "",
+        phone: "",
+      });
+
+      setSuccessMessage("Customer created. You can now submit the booking.");
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message || "Failed to create customer.";
+
+      setErrorMessage(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -68,11 +132,21 @@ function BookingModal({ carId, carName, show, onClose }: BookingModalProps) {
 
     resetMessages();
     setLoading(true);
-    if (!customerId) {
-        setErrorMessage("Please select a customer.");
-        setLoading(false);
-        return;
+
+    if (showNewCustomerForm) {
+      setErrorMessage(
+        "Please create the new customer before submitting the booking."
+      );
+      setLoading(false);
+      return;
     }
+
+    if (!customerId) {
+      setErrorMessage("Please select a customer.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await createBooking({
         customer_id: Number(customerId),
@@ -97,7 +171,7 @@ function BookingModal({ carId, carName, show, onClose }: BookingModalProps) {
   return (
     <>
       <div className="modal show d-block" tabIndex={-1}>
-        <div className="modal-dialog">
+        <div className="modal-dialog modal-lg">
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title">Book {carName}</h5>
@@ -128,29 +202,111 @@ function BookingModal({ carId, carName, show, onClose }: BookingModalProps) {
                 )}
 
                 <div className="mb-3">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
                     <label className="form-label">Customer</label>
 
-                    <select
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={() => {
+                        setShowNewCustomerForm((prevValue) => !prevValue);
+                        resetMessages();
+                      }}
+                    >
+                      {showNewCustomerForm
+                        ? "Use Existing Customer"
+                        : "Add New Customer"}
+                    </button>
+                  </div>
+
+                  {!showNewCustomerForm && (
+                    <>
+                      <select
                         className="form-select"
                         value={customerId}
                         onChange={(event) => setCustomerId(event.target.value)}
                         disabled={customersLoading || customers.length === 0}
                         required
-                    >
+                      >
                         {customers.length === 0 ? (
-                        <option value="">No customers available</option>
+                          <option value="">No customers available</option>
                         ) : (
-                        customers.map((customer) => (
+                          customers.map((customer) => (
                             <option key={customer.id} value={customer.id}>
-                            {customer.first_name} {customer.last_name} - {customer.email}
+                              {customer.first_name} {customer.last_name} -{" "}
+                              {customer.email}
                             </option>
-                        ))
+                          ))
                         )}
-                    </select>
+                      </select>
 
-                    <div className="form-text">
+                      <div className="form-text">
                         Select an existing customer for this booking.
+                      </div>
+                    </>
+                  )}
+
+                  {showNewCustomerForm && (
+                    <div className="border rounded p-3 mt-2 bg-light">
+                      <div className="row">
+                        <div className="col-md-6 mb-3">
+                          <label className="form-label">First Name</label>
+                          <input
+                            type="text"
+                            name="first_name"
+                            className="form-control"
+                            value={newCustomer.first_name}
+                            onChange={handleNewCustomerChange}
+                            required
+                          />
+                        </div>
+
+                        <div className="col-md-6 mb-3">
+                          <label className="form-label">Last Name</label>
+                          <input
+                            type="text"
+                            name="last_name"
+                            className="form-control"
+                            value={newCustomer.last_name}
+                            onChange={handleNewCustomerChange}
+                            required
+                          />
+                        </div>
+
+                        <div className="col-md-6 mb-3">
+                          <label className="form-label">Email</label>
+                          <input
+                            type="email"
+                            name="email"
+                            className="form-control"
+                            value={newCustomer.email}
+                            onChange={handleNewCustomerChange}
+                            required
+                          />
+                        </div>
+
+                        <div className="col-md-6 mb-3">
+                          <label className="form-label">Phone</label>
+                          <input
+                            type="text"
+                            name="phone"
+                            className="form-control"
+                            value={newCustomer.phone}
+                            onChange={handleNewCustomerChange}
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className="btn btn-success"
+                        onClick={handleCreateCustomer}
+                        disabled={loading}
+                      >
+                        {loading ? "Creating..." : "Create Customer"}
+                      </button>
                     </div>
+                  )}
                 </div>
 
                 <div className="mb-3">
@@ -161,11 +317,11 @@ function BookingModal({ carId, carName, show, onClose }: BookingModalProps) {
                     value={pickupDate}
                     min={today}
                     onChange={(event) => {
-                        setPickupDate(event.target.value);
-                        setReturnDate("");
+                      setPickupDate(event.target.value);
+                      setReturnDate("");
                     }}
                     required
-                />
+                  />
                 </div>
 
                 <div className="mb-3">
@@ -177,7 +333,7 @@ function BookingModal({ carId, carName, show, onClose }: BookingModalProps) {
                     min={pickupDate || today}
                     onChange={(event) => setReturnDate(event.target.value)}
                     required
-                    />
+                  />
                 </div>
               </div>
 
