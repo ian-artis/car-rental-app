@@ -5,6 +5,7 @@ import {
   getCustomers,
   type CustomerFormData,
 } from "../services/customerService";
+import AdminNav from "../components/AdminNav";
 
 function AdminCustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -104,6 +105,7 @@ function AdminCustomersPage() {
 
   return (
     <div className="container mt-4">
+      <AdminNav />
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Admin Customers</h1>
 

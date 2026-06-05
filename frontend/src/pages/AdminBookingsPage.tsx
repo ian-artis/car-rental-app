@@ -6,6 +6,8 @@ import {
   updateBookingStatus,
 } from "../services/bookingService";
 
+import AdminNav from "../components/AdminNav";
+
 function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +89,7 @@ function AdminBookingsPage() {
 
   return (
     <div className="container mt-4">
+      <AdminNav />
       <h1 className="mb-4">Admin Bookings</h1>
 
       {message && <div className="alert alert-success">{message}</div>}

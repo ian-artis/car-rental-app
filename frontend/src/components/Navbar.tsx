@@ -18,19 +18,7 @@ function Navbar() {
           </Link>
 
           <Link className="nav-link" to="/admin">
-            Admin Dashboard
-          </Link>
-
-          <Link className="nav-link" to="/admin/cars">
-            Admin Cars
-          </Link>
-
-          <Link className="nav-link" to="/admin/bookings">
-            Admin Bookings
-          </Link>
-
-          <Link className="nav-link" to="/admin/customers">
-            Admin Customers
+            Admin
           </Link>
         </div>
       </div>

@@ -8,6 +8,7 @@ import {
   type CarFormData,
 } from "../services/carService";
 import CarFormModal from "../components/CarFormModal";
+import AdminNav from "../components/AdminNav";
 
 function AdminCarsPage() {
   const [cars, setCars] = useState<Car[]>([]);
@@ -99,6 +100,7 @@ function AdminCarsPage() {
 
   return (
     <div className="container mt-4">
+      <AdminNav />
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Admin Cars</h1>
 

@@ -5,6 +5,7 @@ import { getCustomers } from "../services/customerService";
 import type { Car } from "../types/Car";
 import type { Booking } from "../types/Booking";
 import type { Customer } from "../types/Customer";
+import AdminNav from "../components/AdminNav";
 
 function AdminDashboardPage() {
   const [cars, setCars] = useState<Car[]>([]);
@@ -61,6 +62,7 @@ function AdminDashboardPage() {
 
   return (
     <div className="container mt-4">
+      <AdminNav />
       <h1 className="mb-4">Admin Dashboard</h1>
 
       <div className="row g-4">
