@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createBooking } from "../services/bookingService";
+import { getCustomers } from "../services/customerService";
+import type { Customer } from "../types/Customer";
 
 type BookingModalProps = {
   carId: number;
@@ -9,7 +11,9 @@ type BookingModalProps = {
 };
 
 function BookingModal({ carId, carName, show, onClose }: BookingModalProps) {
-  const [customerId, setCustomerId] = useState("1");
+  const [customerId, setCustomerId] = useState("");
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customersLoading, setCustomersLoading] = useState(false);
   const [pickupDate, setPickupDate] = useState("");
   const [returnDate, setReturnDate] = useState("");
 
@@ -19,6 +23,29 @@ function BookingModal({ carId, carName, show, onClose }: BookingModalProps) {
   const [rentalDays, setRentalDays] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const today = new Date().toISOString().split("T")[0];
+
+  useEffect(() => {
+    const loadCustomers = async () => {
+        if (!show) return;
+
+        try {
+        setCustomersLoading(true);
+        const data = await getCustomers();
+        setCustomers(data);
+
+        if (data.length > 0) {
+            setCustomerId(String(data[0].id));
+        }
+        } catch (error) {
+        console.error("Failed to load customers:", error);
+        setErrorMessage("Failed to load customers.");
+        } finally {
+        setCustomersLoading(false);
+        }
+    };
+
+    loadCustomers();
+}, [show]);
 
   if (!show) {
     return null;
@@ -41,7 +68,11 @@ function BookingModal({ carId, carName, show, onClose }: BookingModalProps) {
 
     resetMessages();
     setLoading(true);
-
+    if (!customerId) {
+        setErrorMessage("Please select a customer.");
+        setLoading(false);
+        return;
+    }
     try {
       const response = await createBooking({
         customer_id: Number(customerId),
@@ -97,19 +128,29 @@ function BookingModal({ carId, carName, show, onClose }: BookingModalProps) {
                 )}
 
                 <div className="mb-3">
-                  <label className="form-label">Customer ID</label>
-                  <input
-                    type="number"
-                    className="form-control"
-                    value={customerId}
-                    onChange={(event) => setCustomerId(event.target.value)}
-                    required
-                  />
+                    <label className="form-label">Customer</label>
 
-                  <div className="form-text">
-                    For MVP testing, use an existing customer ID from your
-                    database.
-                  </div>
+                    <select
+                        className="form-select"
+                        value={customerId}
+                        onChange={(event) => setCustomerId(event.target.value)}
+                        disabled={customersLoading || customers.length === 0}
+                        required
+                    >
+                        {customers.length === 0 ? (
+                        <option value="">No customers available</option>
+                        ) : (
+                        customers.map((customer) => (
+                            <option key={customer.id} value={customer.id}>
+                            {customer.first_name} {customer.last_name} - {customer.email}
+                            </option>
+                        ))
+                        )}
+                    </select>
+
+                    <div className="form-text">
+                        Select an existing customer for this booking.
+                    </div>
                 </div>
 
                 <div className="mb-3">
