@@ -1,56 +1,68 @@
 # Car Rental Platform
 
-A full-stack car rental application.  
-Current version focuses on the backend API using Node.js, Express, TypeScript, MySQL, and mysql2.
+A full-stack car rental platform built with React, TypeScript, Node.js, Express, and MySQL.
 
-## Current MVP
+This project allows users to browse cars, search and filter available vehicles, create bookings, and manage rental data through an admin dashboard.
 
-This MVP includes backend APIs for:
+## Features
 
-- Car inventory management
-- Customer records
-- Rental bookings
-- Booking price calculation
+### Customer Features
+
+- Browse available rental cars
+- View car details
+- Search cars by brand or model
+- Filter cars by type and status
+- Sort cars by price or year
+- Create a booking
+- Select an existing customer or create a new customer during booking
+- Booking date validation for pickup and return dates
+
+### Admin Features
+
+- Admin dashboard with system overview
+- View total cars, customers, and bookings
+- Manage cars
+- Add, edit, and delete cars
+- Manage bookings
+- Update booking status
+- Enforce booking status transition rules
+- Manage customers
+- Add new customers
+- Cleaner admin navigation layout
+
+### Backend Features
+
+- REST API built with Express and TypeScript
+- MySQL database integration
+- Cars CRUD API
+- Customers API
+- Bookings API
 - Booking overlap validation
+- Automatic total price calculation
+- Booking status business rules
 - Swagger API documentation
+- Environment variable configuration
 
 ## Tech Stack
+
+### Frontend
+
+- React
+- TypeScript
+- Vite
+- Bootstrap
+- Axios
+- React Router
+
+### Backend
 
 - Node.js
 - Express
 - TypeScript
 - MySQL
 - mysql2
-- Swagger UI
 - dotenv
-- cors
-
-## Backend Features
-
-### Cars
-
-- Get all cars
-- Get car by ID
-- Create a car
-- Update a car
-- Delete a car
-
-### Customers
-
-- Get all customers
-- Get customer by ID
-- Create a customer
-- Prevent duplicate customer emails
-
-### Bookings
-
-- Get all bookings with customer and car details
-- Get booking by ID
-- Create a booking
-- Calculate total rental price on the backend
-- Prevent overlapping bookings for the same car
-- Update booking status
-- Delete a booking
+- Swagger
 
 ## Project Structure
 
@@ -59,169 +71,166 @@ Car-Rental/
 ├── backend/
 │   ├── src/
 │   │   ├── config/
-│   │   │   └── db.ts
 │   │   ├── controllers/
-│   │   │   ├── carController.ts
-│   │   │   ├── customerController.ts
-│   │   │   └── bookingController.ts
 │   │   ├── docs/
-│   │   │   └── swagger.ts
 │   │   ├── routes/
-│   │   │   ├── carRoutes.ts
-│   │   │   ├── customerRoutes.ts
-│   │   │   └── bookingRoutes.ts
 │   │   └── server.ts
 │   ├── .env.example
 │   ├── package.json
 │   └── tsconfig.json
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   ├── types/
+│   │   └── App.tsx
+│   ├── package.json
+│   └── vite.config.ts
+│
 └── README.md
-```
 
-## Backend Setup
 
-Go to the backend folder:
+Database Tables
 
-```bash
+The application uses three main tables:
+
+cars
+customers
+bookings
+Cars
+
+Stores rental vehicle information such as brand, model, year, type, daily rate, status, and image URL.
+
+Customers
+
+Stores customer information such as first name, last name, email, and phone number.
+
+Bookings
+
+Stores rental bookings with customer, car, pickup date, return date, total price, and status.
+
+Booking Status Rules
+
+Booking status transitions are controlled by backend business logic.
+
+Allowed transitions:
+
+pending → confirmed
+pending → cancelled
+
+confirmed → completed
+confirmed → cancelled
+
+completed → cannot be changed
+cancelled → cannot be changed
+
+This prevents invalid booking workflows such as changing a completed booking back to pending.
+
+API Endpoints
+Cars
+GET    /api/cars
+GET    /api/cars/:id
+POST   /api/cars
+PUT    /api/cars/:id
+DELETE /api/cars/:id
+Customers
+GET  /api/customers
+GET  /api/customers/:id
+POST /api/customers
+Bookings
+GET    /api/bookings
+GET    /api/bookings/:id
+POST   /api/bookings
+PUT    /api/bookings/:id/status
+DELETE /api/bookings/:id
+Getting Started
+Prerequisites
+
+Make sure you have installed:
+
+Node.js
+npm
+MySQL
+
+You can use XAMPP, MySQL Workbench, or another MySQL setup.
+
+Backend Setup
+
+Go into the backend folder:
+
 cd backend
+
+Install dependencies:
+
 npm install
-npm run dev
-```
 
-The backend runs at:
+Create a .env file:
 
-```text
-http://localhost:4000
-```
-
-Swagger API docs:
-
-```text
-http://localhost:4000/api-docs
-```
-
-## Environment Variables
-
-Create a `.env` file inside the `backend` folder:
-
-```env
 PORT=4000
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
 DB_NAME=car_rental_db
-DB_PORT=3306
-```
 
-## Database Setup
+Start the backend:
 
-```sql
-CREATE DATABASE IF NOT EXISTS car_rental_db;
+npm run dev
 
-USE car_rental_db;
+The backend should run on:
 
-CREATE TABLE IF NOT EXISTS cars (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  brand VARCHAR(100) NOT NULL,
-  model VARCHAR(100) NOT NULL,
-  year INT NOT NULL,
-  car_type VARCHAR(100) NOT NULL,
-  daily_rate DECIMAL(10, 2) NOT NULL,
-  status VARCHAR(50) DEFAULT 'available',
-  image_url TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+http://localhost:4000
 
-CREATE TABLE IF NOT EXISTS customers (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  first_name VARCHAR(100) NOT NULL,
-  last_name VARCHAR(100) NOT NULL,
-  email VARCHAR(150) NOT NULL UNIQUE,
-  phone VARCHAR(50),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+Swagger API documentation should be available at:
 
-CREATE TABLE IF NOT EXISTS bookings (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  customer_id INT NOT NULL,
-  car_id INT NOT NULL,
-  pickup_date DATE NOT NULL,
-  return_date DATE NOT NULL,
-  total_price DECIMAL(10, 2) NOT NULL,
-  status VARCHAR(50) DEFAULT 'pending',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+http://localhost:4000/api-docs
+Frontend Setup
 
-  FOREIGN KEY (customer_id) REFERENCES customers(id),
-  FOREIGN KEY (car_id) REFERENCES cars(id)
-);
-```
+Go into the frontend folder:
 
-## API Endpoints
+cd frontend
 
-### Cars
+Install dependencies:
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/cars` | Get all cars |
-| GET | `/api/cars/:id` | Get car by ID |
-| POST | `/api/cars` | Create a car |
-| PUT | `/api/cars/:id` | Update a car |
-| DELETE | `/api/cars/:id` | Delete a car |
+npm install
 
-### Customers
+Start the frontend:
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/customers` | Get all customers |
-| GET | `/api/customers/:id` | Get customer by ID |
-| POST | `/api/customers` | Create a customer |
+npm run dev
 
-### Bookings
+The frontend should run on:
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/api/bookings` | Get all bookings |
-| GET | `/api/bookings/:id` | Get booking by ID |
-| POST | `/api/bookings` | Create a booking |
-| PUT | `/api/bookings/:id/status` | Update booking status |
-| DELETE | `/api/bookings/:id` | Delete a booking |
+http://localhost:5173
+Main Pages
+/                  Home page
+/cars              Browse cars
+/cars/:id          Car details and booking
+/admin             Admin dashboard
+/admin/cars        Manage cars
+/admin/bookings    Manage bookings
+/admin/customers   Manage customers
+Future Improvements
 
-## Sample Booking Request
+Planned features:
 
-```json
-{
-  "customer_id": 1,
-  "car_id": 1,
-  "pickup_date": "2026-06-10",
-  "return_date": "2026-06-13"
-}
-```
+Authentication and authorization
+Admin and customer roles
+Protected admin routes
+Customer “My Bookings” page
+Backend search and filtering with query parameters
+Unit and integration tests
+Deployment
+Improved UI polish
+Purpose of This Project
 
-Example response:
+This project was built as a full-stack portfolio application to demonstrate:
 
-```json
-{
-  "message": "Booking created successfully",
-  "bookingId": 1,
-  "rentalDays": 3,
-  "totalPrice": 135
-}
-```
-
-## Business Logic
-
-The booking API prevents overlapping bookings for the same car.
-
-A booking is rejected if another `pending` or `confirmed` booking already exists for the same car during the selected rental dates.
-
-## Planned Features
-
-- React + TypeScript frontend
-- Bootstrap UI
-- Admin dashboard
-- Authentication
-- Form validation
-- Unit tests
-- Deployment
+Frontend development with React and TypeScript
+Backend API development with Node.js and Express
+MySQL database design
+CRUD operations
+Business logic implementation
+API documentation
+Admin dashboard development
+Git and feature branch workflow
