@@ -135,25 +135,45 @@ function AdminBookingsPage() {
                 </td>
 
                 <td>
-                  <select
-                    className="form-select form-select-sm mb-2"
-                    value={booking.status}
-                    onChange={(event) =>
-                      handleStatusChange(booking.id, event.target.value)
-                    }
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="cancelled">Cancelled</option>
-                    <option value="completed">Completed</option>
-                  </select>
+                    <select
+                        className="form-select form-select-sm mb-2"
+                        value={booking.status}
+                        onChange={(event) =>
+                        handleStatusChange(booking.id, event.target.value)
+                        }
+                        disabled={booking.status === "completed" || booking.status === "cancelled"}
+                    >
+                        <option value={booking.status}>
+                        {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                        </option>
 
-                  <button
-                    className="btn btn-sm btn-danger"
-                    onClick={() => handleDeleteBooking(booking.id)}
-                  >
-                    Delete
-                  </button>
+                        {booking.status === "pending" && (
+                        <>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </>
+                        )}
+
+                        {booking.status === "confirmed" && (
+                        <>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </>
+                        )}
+                    </select>
+
+                    {(booking.status === "completed" || booking.status === "cancelled") && (
+                        <small className="text-muted d-block mb-2">
+                        Final status cannot be changed.
+                        </small>
+                    )}
+
+                    <button
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleDeleteBooking(booking.id)}
+                    >
+                        Delete
+                    </button>
                 </td>
               </tr>
             ))}

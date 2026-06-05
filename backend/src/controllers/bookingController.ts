@@ -201,30 +201,67 @@ export const createBooking = async (req: Request, res: Response) => {
 */
 export const updateBookingStatus = async (req: Request, res: Response) => {
   try {
-    const bookingId = Number(req.params.id);
+    const { id } = req.params;
     const { status } = req.body;
 
     const allowedStatuses = ["pending", "confirmed", "cancelled", "completed"];
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
-        message: "Invalid booking status",
+        message:
+          "Invalid status. Status must be pending, confirmed, cancelled, or completed.",
       });
     }
 
-    const [result]: any = await db.query(
-      "UPDATE bookings SET status = ? WHERE id = ?",
-      [status, bookingId]
+    /*
+      Get the current booking first so we can validate the status transition.
+
+      This protects the business rules at the API level, not only in the UI.
+      Even if someone sends a request directly through Postman, the backend
+      will still reject invalid status changes.
+    */
+    const [bookingRows] = await db.query(
+      "SELECT id, status FROM bookings WHERE id = ?",
+      [id]
     );
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Booking not found" });
+    const bookings = bookingRows as any[];
+
+    if (bookings.length === 0) {
+      return res.status(404).json({ message: "Booking not found." });
     }
 
-    res.json({ message: "Booking status updated successfully" });
+    const currentStatus = bookings[0].status;
+
+    const allowedTransitions: Record<string, string[]> = {
+      pending: ["confirmed", "cancelled"],
+      confirmed: ["completed", "cancelled"],
+      completed: [],
+      cancelled: [],
+    };
+
+    const validNextStatuses = allowedTransitions[currentStatus] || [];
+
+    if (!validNextStatuses.includes(status)) {
+      return res.status(400).json({
+        message: `Cannot change booking status from ${currentStatus} to ${status}.`,
+      });
+    }
+
+    await db.query("UPDATE bookings SET status = ? WHERE id = ?", [
+      status,
+      id,
+    ]);
+
+    return res.json({
+      message: "Booking status updated successfully.",
+    });
   } catch (error) {
     console.error("Error updating booking status:", error);
-    res.status(500).json({ message: "Failed to update booking status" });
+
+    return res.status(500).json({
+      message: "Internal server error.",
+    });
   }
 };
 
