@@ -5,6 +5,7 @@ import CarsPage from "./pages/CarsPage";
 import CarDetailsPage from "./pages/CarDetailsPage";
 import AdminCarsPage from "./pages/AdminCarsPage";
 import AdminBookingsPage from "./pages/AdminBookingsPage";
+import AdminCustomersPage from "./pages/AdminCustomersPage";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/cars/:id" element={<CarDetailsPage />} />
         <Route path="/admin/cars" element={<AdminCarsPage />} />
         <Route path="/admin/bookings" element={<AdminBookingsPage />} />
+        <Route path="/admin/customers" element={<AdminCustomersPage />} />
       </Routes>
     </BrowserRouter>
   );

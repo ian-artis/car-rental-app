@@ -24,6 +24,10 @@ function Navbar() {
           <Link className="nav-link" to="/admin/bookings">
             Admin Bookings
           </Link>
+
+          <Link className="nav-link" to="/admin/customers">
+            Admin Customers
+          </Link>
         </div>
       </div>
     </nav>
