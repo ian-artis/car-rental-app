@@ -17,6 +17,10 @@ function Navbar() {
             Cars
           </Link>
 
+          <Link className="nav-link" to="/admin">
+            Admin Dashboard
+          </Link>
+
           <Link className="nav-link" to="/admin/cars">
             Admin Cars
           </Link>
