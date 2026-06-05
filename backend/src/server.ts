@@ -18,7 +18,12 @@ const app = express();
   - cors allows the frontend to call this API from another origin.
   - express.json allows the API to read JSON request bodies.
 */
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Swagger UI provides interactive API documentation for testing endpoints.
