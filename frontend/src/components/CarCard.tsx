@@ -7,7 +7,7 @@ type CarCardProps = {
 
 function CarCard({ car }: CarCardProps) {
   return (
-    <div className="card h-100 shadow-sm">
+    <div className="card h-100 w-100 shadow-sm">
       {car.image_url ? (
         <img
           src={car.image_url}
