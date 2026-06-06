@@ -185,7 +185,7 @@ function CarsPage() {
       ) : (
         <div className="row g-4">
           {filteredCars.map((car) => (
-            <div className="col-md-4" key={car.id}>
+            <div className="col-md-4 d-flex" key={car.id}>
               <CarCard car={car} />
             </div>
           ))}
