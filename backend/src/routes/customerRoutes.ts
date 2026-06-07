@@ -4,6 +4,7 @@ import {
   getCustomerById,
   createCustomer,
 } from "../controllers/customerController";
+import { authMiddleware } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
@@ -36,21 +37,29 @@ const router = express.Router();
  * /api/customers:
  *   get:
  *     summary: Get all customers
+ *     description: Admin only. Requires Bearer token.
  *     tags:
  *       - Customers
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of customers
+ *       401:
+ *         description: Access denied. No token provided.
  */
-router.get("/", getCustomers);
+router.get("/", authMiddleware, getCustomers);
 
 /**
  * @swagger
  * /api/customers/{id}:
  *   get:
  *     summary: Get customer by ID
+ *     description: Admin only. Requires Bearer token.
  *     tags:
  *       - Customers
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -61,16 +70,19 @@ router.get("/", getCustomers);
  *     responses:
  *       200:
  *         description: Customer found
+ *       401:
+ *         description: Access denied. No token provided.
  *       404:
  *         description: Customer not found
  */
-router.get("/:id", getCustomerById);
+router.get("/:id", authMiddleware, getCustomerById);
 
 /**
  * @swagger
  * /api/customers:
  *   post:
  *     summary: Create a customer
+ *     description: Public route. Used when a customer submits booking information.
  *     tags:
  *       - Customers
  *     requestBody:

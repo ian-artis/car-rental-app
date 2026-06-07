@@ -2,14 +2,11 @@ import { Request, Response } from "express";
 import db from "../config/db";
 
 /*
-  Calculate the number of rental days between pickup and return dates.
-
-  The return date must be after the pickup date. This value is used
-  to calculate the final rental total on the backend.
+  Calculate rental days using pickup and return datetime.
 */
-const calculateRentalDays = (pickupDate: string, returnDate: string) => {
-  const pickup = new Date(pickupDate);
-  const returned = new Date(returnDate);
+const calculateRentalDays = (pickupDateTime: string, returnDateTime: string) => {
+  const pickup = new Date(pickupDateTime);
+  const returned = new Date(returnDateTime);
 
   const differenceMs = returned.getTime() - pickup.getTime();
   const days = Math.ceil(differenceMs / (1000 * 60 * 60 * 24));
@@ -19,9 +16,6 @@ const calculateRentalDays = (pickupDate: string, returnDate: string) => {
 
 /*
   Get all bookings with related customer and car information.
-
-  JOINs are used so the API response can show readable booking details
-  instead of only foreign key IDs.
 */
 export const getBookings = async (req: Request, res: Response) => {
   try {
@@ -32,15 +26,24 @@ export const getBookings = async (req: Request, res: Response) => {
         bookings.car_id,
         bookings.pickup_date,
         bookings.return_date,
+        bookings.pickup_datetime,
+        bookings.return_datetime,
+        bookings.delivery_option,
+        bookings.delivery_fee,
+        bookings.valid_id_1_url,
+        bookings.valid_id_2_url,
         bookings.total_price,
         bookings.status,
         bookings.created_at,
         customers.first_name,
         customers.last_name,
         customers.email,
+        customers.phone,
+        customers.address,
         cars.brand,
         cars.model,
-        cars.year
+        cars.year,
+        cars.daily_rate
       FROM bookings
       JOIN customers ON bookings.customer_id = customers.id
       JOIN cars ON bookings.car_id = cars.id
@@ -69,15 +72,24 @@ export const getBookingById = async (req: Request, res: Response) => {
         bookings.car_id,
         bookings.pickup_date,
         bookings.return_date,
+        bookings.pickup_datetime,
+        bookings.return_datetime,
+        bookings.delivery_option,
+        bookings.delivery_fee,
+        bookings.valid_id_1_url,
+        bookings.valid_id_2_url,
         bookings.total_price,
         bookings.status,
         bookings.created_at,
         customers.first_name,
         customers.last_name,
         customers.email,
+        customers.phone,
+        customers.address,
         cars.brand,
         cars.model,
-        cars.year
+        cars.year,
+        cars.daily_rate
       FROM bookings
       JOIN customers ON bookings.customer_id = customers.id
       JOIN cars ON bookings.car_id = cars.id
@@ -98,46 +110,58 @@ export const getBookingById = async (req: Request, res: Response) => {
 };
 
 /*
-  Create a new booking.
+  Create a new public booking request.
 
-  This endpoint validates the customer, car, rental dates, calculates the
-  total price, and prevents overlapping bookings for the same car.
+  The customer does not need to already exist.
+  The backend creates or reuses the customer by email, then creates
+  a pending booking request.
 */
 export const createBooking = async (req: Request, res: Response) => {
   try {
-    const { customer_id, car_id, pickup_date, return_date } = req.body;
+    const {
+      car_id,
+      first_name,
+      last_name,
+      email,
+      phone,
+      address,
+      pickup_datetime,
+      return_datetime,
+      delivery_option = "pickup",
+    } = req.body;
 
-    if (!customer_id || !car_id || !pickup_date || !return_date) {
+    if (
+      !car_id ||
+      !first_name ||
+      !last_name ||
+      !email ||
+      !phone ||
+      !address ||
+      !pickup_datetime ||
+      !return_datetime
+    ) {
       return res.status(400).json({
-        message: "Customer ID, car ID, pickup date, and return date are required",
+        message:
+          "Car, full name, email, phone, address, pickup date/time, and return date/time are required.",
       });
     }
 
-    const rentalDays = calculateRentalDays(pickup_date, return_date);
+    const allowedDeliveryOptions = ["pickup", "delivery"];
+
+    if (!allowedDeliveryOptions.includes(delivery_option)) {
+      return res.status(400).json({
+        message: "Delivery option must be either pickup or delivery.",
+      });
+    }
+
+    const rentalDays = calculateRentalDays(pickup_datetime, return_datetime);
 
     if (rentalDays <= 0) {
       return res.status(400).json({
-        message: "Return date must be after pickup date",
+        message: "Return date and time must be after pickup date and time.",
       });
     }
 
-    /*
-      Confirm the customer exists before creating a booking that depends
-      on the customers table.
-    */
-    const [customerRows]: any = await db.query(
-      "SELECT id FROM customers WHERE id = ?",
-      [customer_id]
-    );
-
-    if (customerRows.length === 0) {
-      return res.status(404).json({ message: "Customer not found" });
-    }
-
-    /*
-      Get the car rate from the database so pricing cannot be manipulated
-      by changing the request body from the client.
-    */
     const [carRows]: any = await db.query("SELECT * FROM cars WHERE id = ?", [
       car_id,
     ]);
@@ -148,45 +172,105 @@ export const createBooking = async (req: Request, res: Response) => {
 
     const car = carRows[0];
 
-    /*
-      Prevent double-booking.
-
-      Two date ranges overlap when an existing pickup date is before the
-      new return date, and the existing return date is after the new pickup date.
-    */
     const [overlapRows]: any = await db.query(
       `
       SELECT id FROM bookings
       WHERE car_id = ?
       AND status IN ('pending', 'confirmed')
-      AND pickup_date < ?
-      AND return_date > ?
+      AND pickup_datetime < ?
+      AND return_datetime > ?
       `,
-      [car_id, return_date, pickup_date]
+      [car_id, return_datetime, pickup_datetime]
     );
 
     if (overlapRows.length > 0) {
       return res.status(409).json({
-        message: "Car is already booked for the selected dates",
+        message: "Car is already booked for the selected date and time.",
       });
     }
 
-    const totalPrice = rentalDays * Number(car.daily_rate);
+    const [existingCustomers]: any = await db.query(
+      "SELECT id FROM customers WHERE email = ?",
+      [email]
+    );
 
-    const [result]: any = await db.query(
+    let customerId: number;
+
+    if (existingCustomers.length > 0) {
+      customerId = existingCustomers[0].id;
+
+      await db.query(
+        `
+        UPDATE customers
+        SET first_name = ?, last_name = ?, phone = ?, address = ?
+        WHERE id = ?
+        `,
+        [first_name, last_name, phone, address, customerId]
+      );
+    } else {
+      const [customerResult]: any = await db.query(
+        `
+        INSERT INTO customers
+        (first_name, last_name, email, phone, address)
+        VALUES (?, ?, ?, ?, ?)
+        `,
+        [first_name, last_name, email, phone, address]
+      );
+
+      customerId = customerResult.insertId;
+    }
+
+    const rentalPrice = rentalDays * Number(car.daily_rate);
+    const deliveryFee = delivery_option === "delivery" ? 25 : 0;
+    const totalPrice = rentalPrice + deliveryFee;
+
+    const pickupDateOnly = pickup_datetime.split("T")[0];
+    const returnDateOnly = return_datetime.split("T")[0];
+
+    const [bookingResult]: any = await db.query(
       `
       INSERT INTO bookings
-      (customer_id, car_id, pickup_date, return_date, total_price, status)
-      VALUES (?, ?, ?, ?, ?, ?)
+      (
+        customer_id,
+        car_id,
+        pickup_date,
+        return_date,
+        pickup_datetime,
+        return_datetime,
+        delivery_option,
+        delivery_fee,
+        total_price,
+        status
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
-      [customer_id, car_id, pickup_date, return_date, totalPrice, "pending"]
+      [
+        customerId,
+        car_id,
+        pickupDateOnly,
+        returnDateOnly,
+        pickup_datetime,
+        return_datetime,
+        delivery_option,
+        deliveryFee,
+        totalPrice,
+        "pending",
+      ]
     );
 
     res.status(201).json({
-      message: "Booking created successfully",
-      bookingId: result.insertId,
+      message: "Booking request submitted successfully.",
+      bookingId: bookingResult.insertId,
+      customerId,
       rentalDays,
+      rentalPrice,
+      deliveryFee,
       totalPrice,
+      status: "pending",
+      deliveryNotice:
+        delivery_option === "delivery"
+          ? "Delivery selected. An additional delivery fee has been added."
+          : null,
     });
   } catch (error) {
     console.error("Error creating booking:", error);
@@ -196,8 +280,6 @@ export const createBooking = async (req: Request, res: Response) => {
 
 /*
   Update the booking status.
-
-  Status is restricted to known values so the database stays consistent.
 */
 export const updateBookingStatus = async (req: Request, res: Response) => {
   try {
@@ -213,13 +295,6 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
       });
     }
 
-    /*
-      Get the current booking first so we can validate the status transition.
-
-      This protects the business rules at the API level, not only in the UI.
-      Even if someone sends a request directly through Postman, the backend
-      will still reject invalid status changes.
-    */
     const [bookingRows] = await db.query(
       "SELECT id, status FROM bookings WHERE id = ?",
       [id]
@@ -267,9 +342,6 @@ export const updateBookingStatus = async (req: Request, res: Response) => {
 
 /*
   Delete a booking by ID.
-
-  This is useful during development and admin cleanup. In a production app,
-  cancelled bookings are often kept for history instead of deleted.
 */
 export const deleteBooking = async (req: Request, res: Response) => {
   try {

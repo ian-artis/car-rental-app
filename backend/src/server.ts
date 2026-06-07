@@ -7,6 +7,7 @@ import swaggerSpec from "./docs/swagger";
 import carRoutes from "./routes/carRoutes";
 import customerRoutes from "./routes/customerRoutes";
 import bookingRoutes from "./routes/bookingRoutes";
+import authRoutes from "./routes/authRoutes";
 
 // Load environment variables before starting the server.
 dotenv.config();
@@ -35,6 +36,7 @@ app.get("/", (req, res) => {
 });
 
 // API route groups.
+app.use("/api/auth", authRoutes);
 app.use("/api/cars", carRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/bookings", bookingRoutes);

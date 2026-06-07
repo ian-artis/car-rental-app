@@ -6,6 +6,7 @@ import {
   updateCar,
   deleteCar,
 } from "../controllers/carController";
+import { authMiddleware } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
@@ -52,12 +53,6 @@ const router = express.Router();
  *     responses:
  *       200:
  *         description: List of cars
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Car'
  */
 router.get("/", getCars);
 
@@ -88,8 +83,11 @@ router.get("/:id", getCarById);
  * /api/cars:
  *   post:
  *     summary: Create a new car
+ *     description: Admin only. Requires Bearer token.
  *     tags:
  *       - Cars
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -127,18 +125,21 @@ router.get("/:id", getCarById);
  *     responses:
  *       201:
  *         description: Car created successfully
- *       400:
- *         description: Missing required fields
+ *       401:
+ *         description: Access denied. No token provided.
  */
-router.post("/", createCar);
+router.post("/", authMiddleware, createCar);
 
 /**
  * @swagger
  * /api/cars/{id}:
  *   put:
  *     summary: Update a car
+ *     description: Admin only. Requires Bearer token.
  *     tags:
  *       - Cars
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -177,18 +178,23 @@ router.post("/", createCar);
  *     responses:
  *       200:
  *         description: Car updated successfully
+ *       401:
+ *         description: Access denied. No token provided.
  *       404:
  *         description: Car not found
  */
-router.put("/:id", updateCar);
+router.put("/:id", authMiddleware, updateCar);
 
 /**
  * @swagger
  * /api/cars/{id}:
  *   delete:
  *     summary: Delete a car
+ *     description: Admin only. Requires Bearer token.
  *     tags:
  *       - Cars
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -199,9 +205,11 @@ router.put("/:id", updateCar);
  *     responses:
  *       200:
  *         description: Car deleted successfully
+ *       401:
+ *         description: Access denied. No token provided.
  *       404:
  *         description: Car not found
  */
-router.delete("/:id", deleteCar);
+router.delete("/:id", authMiddleware, deleteCar);
 
 export default router;
