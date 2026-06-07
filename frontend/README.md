@@ -1,73 +1,181 @@
-# React + TypeScript + Vite
+# Car Rental Booking System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack car rental booking application built with React, TypeScript, Node.js, Express, and MySQL.
 
-Currently, two official plugins are available:
+The app allows public users to browse available cars and submit booking requests. Admin users can log in to manage cars, customers, and bookings through a protected admin dashboard.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+### Public Users
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- View available rental cars
+- View car details
+- Submit booking requests
+- Choose pickup or delivery option
+- Delivery option adds an additional fee
 
-## Expanding the ESLint configuration
+### Admin Users
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- Admin login with JWT authentication
+- Protected admin dashboard
+- View booking statistics
+- Manage cars
+- View customers
+- Manage booking statuses:
+  - Pending
+  - Confirmed
+  - Cancelled
+  - Completed
+- Logout functionality
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Tech Stack
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Frontend
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- React
+- TypeScript
+- Vite
+- React Router
+- Bootstrap
+- Axios
+- Auth Context
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Backend
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- Node.js
+- Express
+- TypeScript
+- MySQL
+- JWT Authentication
+- bcryptjs
+- Swagger API Documentation
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Project Structure
+
+```text
+car-rental-app
+├── backend
+│   ├── src
+│   │   ├── config
+│   │   ├── controllers
+│   │   ├── docs
+│   │   ├── middleware
+│   │   ├── routes
+│   │   └── server.ts
+│   └── package.json
+│
+├── frontend
+│   ├── src
+│   │   ├── components
+│   │   ├── context
+│   │   ├── pages
+│   │   ├── services
+│   │   ├── types
+│   │   └── App.tsx
+│   └── package.json
+│
+└── README.md
+
+Getting Started
+1. Clone the repository
+git clone https://github.com/ian-artis/car-rental-app.git
+cd car-rental-app
+Backend Setup
+
+Go to the backend folder:
+
+cd backend
+
+Install dependencies:
+
+npm install
+
+Create a .env file:
+
+PORT=4000
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=car_rental_db
+JWT_SECRET=your_secret_key_here
+
+Start the backend server:
+
+npm run dev
+
+The backend runs on:
+
+http://localhost:4000
+
+Swagger API documentation is available at:
+
+http://localhost:4000/api-docs
+Frontend Setup
+
+Go to the frontend folder:
+
+cd frontend
+
+Install dependencies:
+
+npm install
+
+Create a .env file:
+
+VITE_API_BASE_URL=http://localhost:4000/api
+
+Start the frontend:
+
+npm run dev
+
+The frontend runs on:
+
+http://localhost:5173
+Admin Login
+
+Use the admin account created in the database.
+
+Example:
+
+Email: admin@test.com
+Password: admin123
+
+Admin users can access:
+
+/admin/login
+
+After logging in, the admin can access the dashboard, cars, bookings, and customers pages.
+
+API Documentation
+
+This project includes Swagger documentation for the backend API.
+
+Local Swagger URL:
+
+http://localhost:4000/api-docs
+Environment Variables
+Backend
+PORT=
+DB_HOST=
+DB_PORT=
+DB_USER=
+DB_PASSWORD=
+DB_NAME=
+JWT_SECRET=
+Frontend
+VITE_API_BASE_URL=
+Deployment Notes
+
+For deployment:
+
+Add backend environment variables in Railway
+Add frontend environment variables in Vercel
+Make sure VITE_API_BASE_URL points to the deployed backend URL ending in /api
+
+Example:
+
+VITE_API_BASE_URL=https://your-backend-url.up.railway.app/api
+Status
+
+This project is currently being developed as a portfolio project to demonstrate full-stack web development skills, including authentication, protected routes, CRUD operations, API integration, and database management.

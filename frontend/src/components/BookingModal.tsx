@@ -1,11 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createBooking } from "../services/bookingService";
-import {
-  createCustomer,
-  getCustomers,
-  type CustomerFormData,
-} from "../services/customerService";
-import type { Customer } from "../types/Customer";
 
 type BookingModalProps = {
   carId: number;
@@ -14,153 +8,110 @@ type BookingModalProps = {
   onClose: () => void;
 };
 
+type BookingFormData = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  address: string;
+  pickup_datetime: string;
+  return_datetime: string;
+  delivery_option: "pickup" | "delivery";
+};
+
 function BookingModal({ carId, carName, show, onClose }: BookingModalProps) {
-  const [customerId, setCustomerId] = useState("");
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [customersLoading, setCustomersLoading] = useState(false);
-
-  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
-
-  const [newCustomer, setNewCustomer] = useState<CustomerFormData>({
+  const [formData, setFormData] = useState<BookingFormData>({
     first_name: "",
     last_name: "",
     email: "",
     phone: "",
+    address: "",
+    pickup_datetime: "",
+    return_datetime: "",
+    delivery_option: "pickup",
   });
-
-  const [pickupDate, setPickupDate] = useState("");
-  const [returnDate, setReturnDate] = useState("");
 
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [totalPrice, setTotalPrice] = useState<number | null>(null);
+  const [deliveryFee, setDeliveryFee] = useState<number | null>(null);
   const [rentalDays, setRentalDays] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const today = new Date().toISOString().split("T")[0];
-
-  const resetMessages = () => {
-    setSuccessMessage("");
-    setErrorMessage("");
-    setTotalPrice(null);
-    setRentalDays(null);
-  };
-
-  const loadCustomers = async () => {
-    try {
-      setCustomersLoading(true);
-
-      const data = await getCustomers();
-      setCustomers(data);
-
-      if (data.length > 0 && !customerId) {
-        setCustomerId(String(data[0].id));
-      }
-    } catch (error) {
-      console.error("Failed to load customers:", error);
-      setErrorMessage("Failed to load customers.");
-    } finally {
-      setCustomersLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (show) {
-      loadCustomers();
-    }
-  }, [show]);
+  const now = new Date().toISOString().slice(0, 16);
 
   if (!show) {
     return null;
   }
 
+  const resetMessages = () => {
+    setSuccessMessage("");
+    setErrorMessage("");
+    setTotalPrice(null);
+    setDeliveryFee(null);
+    setRentalDays(null);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      first_name: "",
+      last_name: "",
+      email: "",
+      phone: "",
+      address: "",
+      pickup_datetime: "",
+      return_datetime: "",
+      delivery_option: "pickup",
+    });
+  };
+
   const handleClose = () => {
     resetMessages();
-    setShowNewCustomerForm(false);
+    resetForm();
     onClose();
   };
 
-  const handleNewCustomerChange = (
-    event: React.ChangeEvent<HTMLInputElement>
+  const handleChange = (
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = event.target;
 
-    setNewCustomer((prevCustomer) => ({
-      ...prevCustomer,
+    setFormData((prevData) => ({
+      ...prevData,
       [name]: value,
     }));
-  };
 
-  const handleCreateCustomer = async () => {
     resetMessages();
-
-    if (!newCustomer.first_name || !newCustomer.last_name || !newCustomer.email) {
-      setErrorMessage("First name, last name, and email are required.");
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      const response = await createCustomer(newCustomer);
-
-      await loadCustomers();
-
-      setCustomerId(String(response.customerId));
-      setShowNewCustomerForm(false);
-
-      setNewCustomer({
-        first_name: "",
-        last_name: "",
-        email: "",
-        phone: "",
-      });
-
-      setSuccessMessage("Customer created. You can now submit the booking.");
-    } catch (error: any) {
-      const message =
-        error.response?.data?.message || "Failed to create customer.";
-
-      setErrorMessage(message);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     resetMessages();
-    setLoading(true);
 
-    if (showNewCustomerForm) {
-      setErrorMessage(
-        "Please create the new customer before submitting the booking."
-      );
-      setLoading(false);
-      return;
-    }
-
-    if (!customerId) {
-      setErrorMessage("Please select a customer.");
-      setLoading(false);
+    if (formData.return_datetime <= formData.pickup_datetime) {
+      setErrorMessage("Return date and time must be after pickup date and time.");
       return;
     }
 
     try {
+      setLoading(true);
+
       const response = await createBooking({
-        customer_id: Number(customerId),
         car_id: carId,
-        pickup_date: pickupDate,
-        return_date: returnDate,
+        ...formData,
       });
 
       setSuccessMessage(response.message);
       setRentalDays(response.rentalDays);
+      setDeliveryFee(response.deliveryFee);
       setTotalPrice(response.totalPrice);
+      resetForm();
     } catch (error: any) {
       const message =
-        error.response?.data?.message || "Failed to create booking.";
+        error.response?.data?.message || "Failed to submit booking request.";
 
       setErrorMessage(message);
     } finally {
@@ -191,7 +142,8 @@ function BookingModal({ carId, carName, show, onClose }: BookingModalProps) {
 
                     {rentalDays !== null && totalPrice !== null && (
                       <p className="mb-0">
-                        Rental Days: {rentalDays} | Total Price: ${totalPrice}
+                        Rental Days: {rentalDays} | Delivery Fee: ₱
+                        {deliveryFee ?? 0} | Total Price: ₱{totalPrice}
                       </p>
                     )}
                   </div>
@@ -201,140 +153,121 @@ function BookingModal({ carId, carName, show, onClose }: BookingModalProps) {
                   <div className="alert alert-danger">{errorMessage}</div>
                 )}
 
-                <div className="mb-3">
-                  <div className="d-flex justify-content-between align-items-center mb-2">
-                    <label className="form-label">Customer</label>
+                <h6 className="mb-3">Customer Information</h6>
 
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-primary"
-                      onClick={() => {
-                        setShowNewCustomerForm((prevValue) => !prevValue);
-                        resetMessages();
-                      }}
-                    >
-                      {showNewCustomerForm
-                        ? "Use Existing Customer"
-                        : "Add New Customer"}
-                    </button>
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">First Name</label>
+                    <input
+                      type="text"
+                      name="first_name"
+                      className="form-control"
+                      value={formData.first_name}
+                      onChange={handleChange}
+                      required
+                    />
                   </div>
 
-                  {!showNewCustomerForm && (
-                    <>
-                      <select
-                        className="form-select"
-                        value={customerId}
-                        onChange={(event) => setCustomerId(event.target.value)}
-                        disabled={customersLoading || customers.length === 0}
-                        required
-                      >
-                        {customers.length === 0 ? (
-                          <option value="">No customers available</option>
-                        ) : (
-                          customers.map((customer) => (
-                            <option key={customer.id} value={customer.id}>
-                              {customer.first_name} {customer.last_name} -{" "}
-                              {customer.email}
-                            </option>
-                          ))
-                        )}
-                      </select>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Last Name</label>
+                    <input
+                      type="text"
+                      name="last_name"
+                      className="form-control"
+                      value={formData.last_name}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
 
-                      <div className="form-text">
-                        Select an existing customer for this booking.
-                      </div>
-                    </>
-                  )}
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      className="form-control"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
 
-                  {showNewCustomerForm && (
-                    <div className="border rounded p-3 mt-2 bg-light">
-                      <div className="row">
-                        <div className="col-md-6 mb-3">
-                          <label className="form-label">First Name</label>
-                          <input
-                            type="text"
-                            name="first_name"
-                            className="form-control"
-                            value={newCustomer.first_name}
-                            onChange={handleNewCustomerChange}
-                            required
-                          />
-                        </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Phone</label>
+                    <input
+                      type="text"
+                      name="phone"
+                      className="form-control"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
 
-                        <div className="col-md-6 mb-3">
-                          <label className="form-label">Last Name</label>
-                          <input
-                            type="text"
-                            name="last_name"
-                            className="form-control"
-                            value={newCustomer.last_name}
-                            onChange={handleNewCustomerChange}
-                            required
-                          />
-                        </div>
-
-                        <div className="col-md-6 mb-3">
-                          <label className="form-label">Email</label>
-                          <input
-                            type="email"
-                            name="email"
-                            className="form-control"
-                            value={newCustomer.email}
-                            onChange={handleNewCustomerChange}
-                            required
-                          />
-                        </div>
-
-                        <div className="col-md-6 mb-3">
-                          <label className="form-label">Phone</label>
-                          <input
-                            type="text"
-                            name="phone"
-                            className="form-control"
-                            value={newCustomer.phone}
-                            onChange={handleNewCustomerChange}
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        className="btn btn-success"
-                        onClick={handleCreateCustomer}
-                        disabled={loading}
-                      >
-                        {loading ? "Creating..." : "Create Customer"}
-                      </button>
-                    </div>
-                  )}
+                  <div className="col-12 mb-3">
+                    <label className="form-label">Address</label>
+                    <textarea
+                      name="address"
+                      className="form-control"
+                      rows={2}
+                      value={formData.address}
+                      onChange={handleChange}
+                      required
+                    ></textarea>
+                  </div>
                 </div>
+
+                <h6 className="mb-3">Rental Schedule</h6>
+
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Pickup Date and Time</label>
+                    <input
+                      type="datetime-local"
+                      name="pickup_datetime"
+                      className="form-control"
+                      value={formData.pickup_datetime}
+                      min={now}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label">Return Date and Time</label>
+                    <input
+                      type="datetime-local"
+                      name="return_datetime"
+                      className="form-control"
+                      value={formData.return_datetime}
+                      min={formData.pickup_datetime || now}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <h6 className="mb-3">Pickup Option</h6>
 
                 <div className="mb-3">
-                  <label className="form-label">Pickup Date</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={pickupDate}
-                    min={today}
-                    onChange={(event) => {
-                      setPickupDate(event.target.value);
-                      setReturnDate("");
-                    }}
+                  <select
+                    name="delivery_option"
+                    className="form-select"
+                    value={formData.delivery_option}
+                    onChange={handleChange}
                     required
-                  />
+                  >
+                    <option value="pickup">Pickup</option>
+                    <option value="delivery">Delivery</option>
+                  </select>
                 </div>
 
-                <div className="mb-3">
-                  <label className="form-label">Return Date</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={returnDate}
-                    min={pickupDate || today}
-                    onChange={(event) => setReturnDate(event.target.value)}
-                    required
-                  />
-                </div>
+                {formData.delivery_option === "delivery" && (
+                  <div className="alert alert-warning">
+                    Delivery selected. An additional ₱500 delivery fee will be
+                    added to your total.
+                  </div>
+                )}
               </div>
 
               <div className="modal-footer">
@@ -352,7 +285,7 @@ function BookingModal({ carId, carName, show, onClose }: BookingModalProps) {
                   className="btn btn-primary"
                   disabled={loading}
                 >
-                  {loading ? "Submitting..." : "Submit Booking"}
+                  {loading ? "Submitting..." : "Submit Booking Request"}
                 </button>
               </div>
             </form>

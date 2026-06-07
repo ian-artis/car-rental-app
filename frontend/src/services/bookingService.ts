@@ -10,6 +10,17 @@ const API_BASE_URL =
 
 const API_URL = `${API_BASE_URL}/bookings`;
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("adminToken");
+
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+};
+
+// Public route: customers can create booking requests without login
 export const createBooking = async (
   bookingData: CreateBookingRequest
 ): Promise<CreateBookingResponse> => {
@@ -17,17 +28,25 @@ export const createBooking = async (
   return response.data;
 };
 
+// Admin-only route: requires token
 export const getBookings = async (): Promise<Booking[]> => {
-  const response = await axios.get(API_URL);
+  const response = await axios.get(API_URL, getAuthHeaders());
   return response.data;
 };
 
+// Admin-only route: requires token
 export const updateBookingStatus = async (id: number, status: string) => {
-  const response = await axios.put(`${API_URL}/${id}/status`, { status });
+  const response = await axios.put(
+    `${API_URL}/${id}/status`,
+    { status },
+    getAuthHeaders()
+  );
+
   return response.data;
 };
 
+// Admin-only route: requires token
 export const deleteBooking = async (id: number) => {
-  const response = await axios.delete(`${API_URL}/${id}`);
+  const response = await axios.delete(`${API_URL}/${id}`, getAuthHeaders());
   return response.data;
 };

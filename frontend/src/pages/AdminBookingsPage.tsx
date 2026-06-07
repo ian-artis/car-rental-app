@@ -83,6 +83,10 @@ function AdminBookingsPage() {
     return "bg-warning text-dark";
   };
 
+  const formatDateTime = (dateTime: string) => {
+    return new Date(dateTime).toLocaleString();
+  };
+
   if (loading) {
     return <div className="container mt-4">Loading admin bookings...</div>;
   }
@@ -104,6 +108,8 @@ function AdminBookingsPage() {
               <th>Car</th>
               <th>Pickup</th>
               <th>Return</th>
+              <th>Option</th>
+              <th>Delivery Fee</th>
               <th>Total</th>
               <th>Status</th>
               <th style={{ width: "220px" }}>Actions</th>
@@ -119,17 +125,23 @@ function AdminBookingsPage() {
                   <div>
                     {booking.first_name} {booking.last_name}
                   </div>
-                  <small className="text-muted">{booking.email}</small>
+                  <small className="text-muted d-block">{booking.email}</small>
+                  <small className="text-muted d-block">{booking.phone}</small>
+                  <small className="text-muted d-block">{booking.address}</small>
                 </td>
 
                 <td>
                   {booking.brand} {booking.model} ({booking.year})
                 </td>
 
-                <td>{new Date(booking.pickup_date).toLocaleDateString()}</td>
-                <td>{new Date(booking.return_date).toLocaleDateString()}</td>
+                <td>{formatDateTime(booking.pickup_datetime)}</td>
+                <td>{formatDateTime(booking.return_datetime)}</td>
 
-                <td>${booking.total_price}</td>
+                <td className="text-capitalize">{booking.delivery_option}</td>
+
+                <td>₱{Number(booking.delivery_fee || 0).toFixed(2)}</td>
+
+                <td>₱{Number(booking.total_price || 0).toFixed(2)}</td>
 
                 <td>
                   <span className={`badge ${getStatusBadgeClass(booking.status)}`}>
@@ -138,52 +150,57 @@ function AdminBookingsPage() {
                 </td>
 
                 <td>
-                    <select
-                        className="form-select form-select-sm mb-2"
-                        value={booking.status}
-                        onChange={(event) =>
-                        handleStatusChange(booking.id, event.target.value)
-                        }
-                        disabled={booking.status === "completed" || booking.status === "cancelled"}
-                    >
-                        <option value={booking.status}>
-                        {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                        </option>
+                  <select
+                    className="form-select form-select-sm mb-2"
+                    value={booking.status}
+                    onChange={(event) =>
+                      handleStatusChange(booking.id, event.target.value)
+                    }
+                    disabled={
+                      booking.status === "completed" ||
+                      booking.status === "cancelled"
+                    }
+                  >
+                    <option value={booking.status}>
+                      {booking.status.charAt(0).toUpperCase() +
+                        booking.status.slice(1)}
+                    </option>
 
-                        {booking.status === "pending" && (
-                        <>
-                            <option value="confirmed">Confirmed</option>
-                            <option value="cancelled">Cancelled</option>
-                        </>
-                        )}
-
-                        {booking.status === "confirmed" && (
-                        <>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                        </>
-                        )}
-                    </select>
-
-                    {(booking.status === "completed" || booking.status === "cancelled") && (
-                        <small className="text-muted d-block mb-2">
-                        Final status cannot be changed.
-                        </small>
+                    {booking.status === "pending" && (
+                      <>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </>
                     )}
 
-                    <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => handleDeleteBooking(booking.id)}
-                    >
-                        Delete
-                    </button>
+                    {booking.status === "confirmed" && (
+                      <>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </>
+                    )}
+                  </select>
+
+                  {(booking.status === "completed" ||
+                    booking.status === "cancelled") && (
+                    <small className="text-muted d-block mb-2">
+                      Final status cannot be changed.
+                    </small>
+                  )}
+
+                  <button
+                    className="btn btn-sm btn-danger"
+                    onClick={() => handleDeleteBooking(booking.id)}
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
 
             {bookings.length === 0 && (
               <tr>
-                <td colSpan={8} className="text-center">
+                <td colSpan={10} className="text-center">
                   No bookings found.
                 </td>
               </tr>

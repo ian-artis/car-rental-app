@@ -6,11 +6,22 @@ const API_BASE_URL =
 
 const API_URL = `${API_BASE_URL}/customers`;
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("adminToken");
+
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+};
+
 export type CustomerFormData = {
   first_name: string;
   last_name: string;
   email: string;
   phone: string;
+  address?: string;
 };
 
 export type CreateCustomerResponse = {
@@ -18,11 +29,13 @@ export type CreateCustomerResponse = {
   customerId: number;
 };
 
+// Admin-only route
 export const getCustomers = async (): Promise<Customer[]> => {
-  const response = await axios.get(API_URL);
+  const response = await axios.get(API_URL, getAuthHeaders());
   return response.data;
 };
 
+// Public route
 export const createCustomer = async (
   customerData: CustomerFormData
 ): Promise<CreateCustomerResponse> => {
